@@ -169,15 +169,6 @@ def remove_stopwords(text):
 input_data['review']=input_data['review'].apply(remove_stopwords)
 
 print(input_data.head(1))
-'''
-#Stemming the text
-def simple_stemmer(text):
-    ps=nltk.porter.PorterStemmer()
-    text= ' '.join([ps.stem(word) for word in text.split()])
-    return text
-#Apply function on review column
-input_data['review']=input_data['review'].apply(simple_stemmer)
-'''
 
 #print(input_data.head(10))
 #####################################################################
