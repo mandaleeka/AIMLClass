@@ -169,6 +169,15 @@ def remove_stopwords(text):
 input_data['review']=input_data['review'].apply(remove_stopwords)
 
 print(input_data.head(1))
+'''
+#Stemming the text
+def simple_stemmer(text):
+    ps=nltk.porter.PorterStemmer()
+    text= ' '.join([ps.stem(word) for word in text.split()])
+    return text
+#Apply function on review column
+input_data['review']=input_data['review'].apply(simple_stemmer)
+'''
 
 #print(input_data.head(10))
 #####################################################################
@@ -223,7 +232,7 @@ count.most_common(15)
 
 pos_words = pd.DataFrame(count.most_common(15))
 pos_words.columns = ['word', 'count']
-print(pos_words.head(15))
+print(pos_words.head(100))
 
 #plt.bar(pos_words, x='count', y='word', title='Common words in positive reviews', color = 'word')
 
@@ -250,16 +259,21 @@ print(neg_words.head(15))
 Reviews = input_data['review']
 Sentiments = input_data['sentiment']
 
+review_tr = pd.DataFrame(input_data['review'])
+
 vect = TfidfVectorizer()
 Reviews = vect.fit_transform(input_data['review'])
 
 x_train, x_test, y_train, y_test = train_test_split(Reviews, Sentiments, test_size=0.2, random_state=42)
 
-
 print("Size of x_train: ", (x_train.shape))
 print("Size of y_train: ", (y_train.shape))
 print("Size of x_test: ", (x_test.shape))
 print("Size of y_test: ", (y_test.shape))
+
+
+print("\n\n", np.size(review_tr), "\n\n")
+print("\n\n", review_tr.head(5), "\n\n")
 
 
 ########## Logistic Regression training
@@ -298,6 +312,7 @@ svc = LinearSVC()
 svc.fit(x_train, y_train)
 svc_pred = svc.predict(x_test)
 svc_acc = accuracy_score(svc_pred, y_test)
+
 print("Test accuracy: {:.2f}%".format(svc_acc*100))
 
 print(confusion_matrix(y_test, svc_pred))
@@ -306,3 +321,44 @@ print(classification_report(y_test, svc_pred))
 print("\n")
 
 ###############################################################
+
+########## Tuned Support Vector Classifier model
+print("##########               Tuned Support Vector Classifier model         ########## ")
+svc = LinearSVC(C = 1, loss='hinge')
+svc.fit(x_train, y_train)
+svc_pred = svc.predict(x_test)
+svc_acc = accuracy_score(svc_pred, y_test)
+print("Test accuracy: {:.2f}%".format(svc_acc*100))
+
+print(confusion_matrix(y_test, svc_pred))
+print("\n")
+print(classification_report(y_test, svc_pred))
+
+###############################################################
+
+########## Using Transformer with out any training model and using a readily available model
+print("##########               Transformer without training         ########## ")
+
+from happytransformer import HappyTextClassification
+
+happy_tr = HappyTextClassification(model_type="DISTILBERT", model_name="distilbert-base-uncased-finetuned-sst-2-english", num_labels=2)
+
+transformer_pred = np.array(['']*155, dtype='U10') 
+
+testText = review_tr['review'][0]
+result = happy_tr.classify_text(testText)
+    
+for i in range(0,155):
+    testText = review_tr['review'][i]
+    result = happy_tr.classify_text(testText)
+    if result.label == 'NEGATIVE':
+        transformer_pred[i] = 'negative'
+    else:
+        transformer_pred[i] = 'positive' 
+
+transformer_acc = accuracy_score(transformer_pred, Sentiments.iloc[:155])
+
+print("Test accuracy: {:.2f}%".format(transformer_acc*100))
+###############################################################
+
+
